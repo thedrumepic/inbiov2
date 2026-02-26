@@ -1,0 +1,106 @@
+services:
+  mongodb:
+    image: mongo:6.0
+    container_name: inbio-db
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+    volumes:
+      - mongodb_data:/data/db
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    networks:
+      - inbio-net
+
+  backend:
+    build: ./backend
+    container_name: inbio-backend
+    restart: unless-stopped
+    expose:
+      - "8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    environment:
+      - MONGO_URL=mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongodb:27017/inbio?authSource=admin
+      - USE_MOCK_DB=false
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - SUPPORT_BOT_TOKEN=${SUPPORT_BOT_TOKEN}
+      - SUPPORT_OPERATOR_ID=${SUPPORT_OPERATOR_ID}
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - OWNER_EMAIL=${OWNER_EMAIL}
+      - BASE_URL=https://inbio.one
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - inbio-net
+    volumes:
+      - ./backend/uploads:/app/uploads
+      # Монтируем том с билдом фронтенда туда, где его ищет server.py (/frontend/build)
+      - frontend_build:/frontend/build:ro
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        - REACT_APP_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+        - REACT_APP_BACKEND_URL=https://inbio.one
+    container_name: inbio-frontend
+    restart: unless-stopped
+    expose:
+      - "80"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:80"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    volumes:
+      # Nginx хранит файлы здесь. Docker скопирует их в том frontend_build при старте.
+      - frontend_build:/usr/share/nginx/html
+    networks:
+      - inbio-net
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: inbio-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+      # Caddy тоже может раздавать статику, если нужно (опционально)
+      - frontend_build:/var/www/html:ro
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - inbio-net
+
+networks:
+  inbio-net:
+    driver: bridge
+
+volumes:
+  mongodb_data:
+  caddy_data:
+  caddy_config:
+  frontend_build:

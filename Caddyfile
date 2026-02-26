@@ -1,0 +1,53 @@
+# ===== INBIO.ONE =====
+
+# Redirect www to non-www
+www.inbio.one {
+    redir https://inbio.one{uri}
+}
+
+inbio.one {
+    # Compression
+    encode gzip zstd
+
+    # Security headers
+    header {
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        X-XSS-Protection "1; mode=block"
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        -Server
+    }
+
+    # Request body limit (100MB for file uploads)
+    request_body {
+        max_size 100mb
+    }
+
+    # API and uploads → backend
+    reverse_proxy /api/* backend:8000
+    reverse_proxy /uploads/* backend:8000
+
+    # HTML pages (SSR for SEO) → backend
+    @html_pages {
+        not path /api/*
+        not path /uploads/*
+        not path /static/*
+        not path *.js
+        not path *.css
+        not path *.png
+        not path *.jpg
+        not path *.jpeg
+        not path *.ico
+        not path *.svg
+        not path *.json
+        not path *.map
+        not path *.woff
+        not path *.woff2
+        not path *.ttf
+    }
+    reverse_proxy @html_pages backend:8000
+
+    # Everything else (static assets) → frontend nginx
+    reverse_proxy * frontend:80
+}

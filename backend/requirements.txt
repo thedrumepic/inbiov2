@@ -1,0 +1,29 @@
+# Web framework
+fastapi>=0.110.0,<1.0.0
+uvicorn>=0.25.0,<1.0.0
+python-multipart>=0.0.22
+
+# Database
+motor>=3.3.0,<4.0.0
+pymongo>=4.5.0,<5.0.0
+
+# Auth & Security
+bcrypt>=4.1.0,<5.0.0
+python-jose[cryptography]>=3.3.0,<4.0.0
+pydantic[email]>=2.0.0,<3.0.0
+
+# HTTP client
+aiohttp>=3.9.0,<4.0.0
+
+# Image processing
+pillow>=10.0.0,<13.0.0
+qrcode>=7.0.0,<8.0.0
+
+# Telegram bots
+aiogram>=3.0.0,<4.0.0
+
+# Email
+resend>=2.0.0,<3.0.0
+
+# Utils
+python-dotenv>=1.0.0,<2.0.0
