@@ -667,8 +667,11 @@ const PageEditor = ({ page, onClose }) => {
             <ThemeToggle
               value={pageData.theme}
               onChange={(newTheme) => {
-                setPageData(prev => ({ ...prev, theme: newTheme }));
-                toast.success(newTheme === 'light' ? 'Ваша страница теперь светлая' : 'Ваша страница теперь темная');
+                setPageData(prev => {
+                  const updated = { ...prev, theme: newTheme };
+                  api.updatePage(page.id, updated).catch(() => {});
+                  return updated;
+                });
               }}
             />
             <Tooltip content="Как это работает?">

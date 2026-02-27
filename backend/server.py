@@ -449,11 +449,72 @@ async def broadcast_by_page_id(page_id: str):
 
 # ===== Models =====
 
+# Template block definitions for onboarding
+TEMPLATE_BLOCKS: Dict[str, List[Dict[str, Any]]] = {
+    "musician": [
+        {"block_type": "social_icons", "content": {"platforms": ["instagram", "tiktok", "youtube"]}},
+        {"block_type": "music", "content": {}},
+        {"block_type": "link", "content": {"title": "Spotify", "url": ""}},
+        {"block_type": "link", "content": {"title": "Apple Music", "url": ""}},
+        {"block_type": "events", "content": {"title": "Афиша", "items": []}},
+        {"block_type": "gallery", "content": {"images": []}},
+    ],
+    "barber": [
+        {"block_type": "link", "content": {"title": "Записаться", "url": ""}},
+        {"block_type": "gallery", "content": {"images": []}},
+        {"block_type": "schedule", "content": {}},
+        {"block_type": "social_icons", "content": {"platforms": ["instagram", "tiktok"]}},
+        {"block_type": "contact_form", "content": {}},
+    ],
+    "photographer": [
+        {"block_type": "gallery", "content": {"images": []}},
+        {"block_type": "link", "content": {"title": "Портфолио", "url": ""}},
+        {"block_type": "text", "content": {"text": "Прайс на услуги"}},
+        {"block_type": "contact_form", "content": {}},
+        {"block_type": "social_icons", "content": {"platforms": ["instagram"]}},
+    ],
+    "blogger": [
+        {"block_type": "social_icons", "content": {"platforms": ["instagram", "tiktok", "youtube"]}},
+        {"block_type": "link", "content": {"title": "Основная площадка", "url": ""}},
+        {"block_type": "youtube", "content": {}},
+        {"block_type": "tiktok", "content": {}},
+        {"block_type": "donation", "content": {}},
+    ],
+    "business": [
+        {"block_type": "showcase", "content": {"items": []}},
+        {"block_type": "link", "content": {"title": "Наш сайт", "url": ""}},
+        {"block_type": "contact_form", "content": {}},
+        {"block_type": "map", "content": {}},
+        {"block_type": "social_icons", "content": {"platforms": ["instagram"]}},
+    ],
+    "freelancer": [
+        {"block_type": "events", "content": {"title": "Услуги и цены", "items": []}},
+        {"block_type": "gallery", "content": {"images": []}},
+        {"block_type": "contact_form", "content": {}},
+        {"block_type": "social_icons", "content": {"platforms": ["instagram", "tiktok"]}},
+    ],
+    "doctor": [
+        {"block_type": "text", "content": {"text": "О себе и образование"}},
+        {"block_type": "schedule", "content": {}},
+        {"block_type": "link", "content": {"title": "Записаться", "url": ""}},
+        {"block_type": "contact_form", "content": {}},
+        {"block_type": "map", "content": {}},
+    ],
+    "restaurant": [
+        {"block_type": "gallery", "content": {"images": []}},
+        {"block_type": "link", "content": {"title": "Меню", "url": ""}},
+        {"block_type": "map", "content": {}},
+        {"block_type": "social_icons", "content": {"platforms": ["instagram"]}},
+        {"block_type": "events", "content": {"title": "Афиша событий", "items": []}},
+    ],
+}
+
 class UserRegister(BaseModel):
     email: EmailStr
     password: str
     username: Optional[str] = None
     role: str = "user"
+    template: Optional[str] = None
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -939,7 +1000,22 @@ async def register(user_data: UserRegister, request: Request):
         }
         await db.pages.insert_one(page)
 
-    
+        # 5. Create template blocks if template provided
+        if user_data.template and user_data.template in TEMPLATE_BLOCKS:
+            page_id = page["id"]
+            for order, block_def in enumerate(TEMPLATE_BLOCKS[user_data.template]):
+                block = {
+                    "id": str(uuid.uuid4()),
+                    "page_id": page_id,
+                    "user_id": user_id,
+                    "block_type": block_def["block_type"],
+                    "content": block_def.get("content", {}),
+                    "order": order,
+                    "is_visible": True,
+                    "created_at": datetime.now(timezone.utc).isoformat(),
+                }
+                await db.blocks.insert_one(block)
+
     token = create_access_token({"sub": user_id, "role": role})
     
     return TokenResponse(

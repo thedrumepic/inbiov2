@@ -5,6 +5,8 @@ import { GoogleOAuthProvider } from '@react-oauth/google';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import Onboarding from './pages/Onboarding';
+import TemplatePreview from './pages/TemplatePreview';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import PublicPage from './pages/PublicPage';
@@ -22,7 +24,9 @@ function AppRouter() {
     <Routes>
       <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
+      <Route path="/register" element={<Onboarding />} />
+      <Route path="/register-old" element={<Register />} />
+      <Route path="/preview/:templateId" element={<TemplatePreview />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
 
@@ -89,23 +93,22 @@ function App() {
     <GoogleWrapper>
       <BrowserRouter>
         <AppRouter />
-        <Toaster 
-          position="bottom-center" 
+        <Toaster
+          position="bottom-center"
           expand={false}
-          duration={3000}
-          style={{ zIndex: 99999 }}
+          richColors={false}
           toastOptions={{
             duration: 3000,
+            unstyled: false,
             style: {
-              background: '#000000',
+              background: '#111111',
               color: '#ffffff',
-              border: 'none',
+              border: '1px solid rgba(255,255,255,0.1)',
               borderRadius: '12px',
               padding: '13px 18px',
               fontSize: '14px',
               fontWeight: '500',
               boxShadow: '0 8px 30px rgba(0,0,0,0.5)',
-              zIndex: 99999,
             },
           }}
         />
